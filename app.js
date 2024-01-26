@@ -74,10 +74,11 @@ const jwtSecret = process.env.JWT_SECRET;
   [POST]
   \/register        -  Create new user with the following JSON format.  { "username": "yourusername" , "password": "yourpassword" }
   \/login           -  Login with credentials created in register. Copy token returned on successful login and test using \/allusers
+                    -  Login JSON format - { "username": "yourusername" , "password": "yourpassword" }
   \/changepassword  -  Change password of current user using {"newPassword": "&ltyournewpassword&gt"} and valid bearer token
 
   [DELETE]
-  \/delete          -   Delete user at https://&lturl&gt/delete/ID=&ltID TO DELETE&gt. See /allusers for list.
+  \/delete          -   Delete user at https://&lturl&gt/delete/&ltID TO DELETE&gt. See /allusers for list.
 
   `
 
@@ -152,12 +153,22 @@ app.post("/changepassword", authenticateToken, async function(req, res){
   })
 
   app.delete("/delete/:id", async (req, res) => {
+    const existingUser = await db.collection("users").findOne({ _id: new ObjectId(req.params.id) });
+
+    if (!existingUser) {
+      // User not found, respond with a 404 status and a message
+      return res.status(404).json({ message: "User not found" });
+    }
+
     let results = await db.collection("users").deleteOne({
       _id: new ObjectId(req.params.id)
-    });
+    })
+    
+    console.log(results)
+    ;
     res.status(200);
     res.send({
-      message: "OK"
+      message: `${results.deletedCount} user deleted`
     });
   });
 
